@@ -47,6 +47,8 @@ A successful main push (including a merged PR) runs tests and publishes the pack
 
 The production service-worker cache version is derived from the runtime contents during packaging, so game changes automatically create a fresh cache. Keep new runtime files in the service worker's offline list and the build allowlist. Never add `skipWaiting` without designing safe mid-game updates.
 
+GitHub Actions are pinned to verified release commit hashes. Update the hash and its version comment together in a pull request; check the action's release notes for changed inputs. CI intentionally pins Ubuntu 24.04 instead of following runner image migrations automatically.
+
 Existing app windows must close before a waiting update activates. The game is served under the repository subpath, so runtime URLs must stay relative (`./`, `js/...`), not root-absolute (`/js/...`).
 
 ## Safety and privacy
