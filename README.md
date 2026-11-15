@@ -47,10 +47,12 @@ For a different port, set the `PORT` environment variable before starting. To pl
 
 | Device | Steer | Pause |
 | --- | --- | --- |
-| iPhone / touch | Swipe on the board or tap arrows | Pause button |
+| iPhone / touch | Swipe on the pad below the ocean; optional board swipes or bigger arrows | Pause button |
 | Computer | Arrow keys or WASD | Space / Escape |
 
-Turns are buffered; reversing directly into your neck is not allowed. Switching apps/tabs pauses the game. Resuming starts a three-second countdown. Start with the optional safe tutorial or choose Chill for a slower swim and a protective bubble.
+The **Swipe pad** keeps your finger off the board. Short strokes register as your finger moves; you can make several turns without lifting it. Choose **Arrows** for larger, nonoverlapping touch buttons; your choice is saved. In landscape, the pad sits beside the ocean. Arrow availability and handedness are in Settings.
+
+Turns are buffered; reversing directly into your neck is not allowed. Held keyboard keys do not generate extra turns. A small corner-timing grace window helps near-centre inputs land on the intended square without granting extra moves. Switching apps/tabs pauses the exact visible position. Resuming starts a three-second countdown. Start with the optional safe tutorial or choose Chill for a slower swim and a protective bubble.
 
 ### Scoring and rewards
 White pearls start at 10 points, golden pearls at 30. Collect within four seconds to raise your combo. Five quick collections start Pearl Party. Double Treasure and Pearl Party can multiply collection points. The result screen itemizes earned currency; achievements/quests pay once per completion.
@@ -96,6 +98,7 @@ Playwright covers desktop Chromium and an iPhone-sized WebKit context, including
 | `SPEC.md` | Rules, architecture, economy, persistence, acceptance criteria |
 | `index.html`, `style.css` | Responsive accessible UI shell |
 | `js/engine.js` | Pure seeded simulation |
+| `js/motion.js`, `js/input.js` | Arrival-time movement, responsive cornering, keyboard/swipe input |
 | `js/data.js` | Modes, mazes, skins, missions, achievements |
 | `js/storage.js` | Validated saves and atomic run reward settlement |
 | `js/render.js`, `js/art.js` | Canvas ocean, snake rendering, custom SVG art |

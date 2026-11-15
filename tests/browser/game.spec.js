@@ -16,6 +16,11 @@ async function start(page,mode='classic'){
   if(mode==='maze')await page.locator('[data-action="stage"][data-value="0"]').click();
   await expect(page.locator('#countdown')).toBeVisible();
 }
+async function timedPrepared(page){
+  await page.clock.install({time:new Date('2026-11-01T00:00:00Z')});
+  await prepared(page);
+  await page.clock.pauseAt(new Date('2026-11-01T00:01:00Z'));
+}
 
 test('home has four adventures, no horizontal overflow, and custom ocean art',async({page},info)=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -40,7 +45,7 @@ test('nickname, buddy, three starter skins, and tutorial onboarding persist',asy
 });
 
 test('classic runs, settles once, can retry, and preserves records on reload',async({page})=>{
-  await page.clock.install();await prepared(page);await start(page);
+  await timedPrepared(page);await start(page);
   await page.clock.runFor(7000);await expect(page.locator('#modal')).toBeVisible();
   await expect(page.locator('[data-action="retry"]')).toBeVisible();
   const s=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),SAVE_KEY);expect(s.totals.runs).toBe(1);expect(s.records['classic:adventure']).toHaveLength(1);
@@ -50,7 +55,7 @@ test('classic runs, settles once, can retry, and preserves records on reload',as
 });
 
 test('pause freezes Time Twist and resumes with a countdown',async({page})=>{
-  await page.clock.install();await prepared(page);await start(page,'time');await page.clock.runFor(3700);
+  await timedPrepared(page);await start(page,'time');await page.clock.runFor(3700);
   await click(page,'pause');const before=await page.locator('#hud-goal').textContent();
   await page.clock.fastForward(30000);expect(await page.locator('#hud-goal').textContent()).toBe(before);
   await expect(page.getByRole('heading',{name:'Your ocean can wait.'})).toBeVisible();
@@ -89,14 +94,18 @@ test('profile edits do not grant more free skins',async({page})=>{
 test('landscape keeps the board and arrows in the viewport',async({page})=>{
   await page.setViewportSize({width:844,height:390});await prepared(page);await start(page);
   const board=await page.locator('#game-canvas').boundingBox();expect(board.height).toBeGreaterThan(180);expect(board.y+board.height).toBeLessThan(390);
+  await page.locator('#arrows-mode').click();
   for(const b of await page.locator('#dpad button').all()){const rect=await b.boundingBox();expect(rect.y+rect.height).toBeLessThanOrEqual(390);}
 });
 
 test('board fits a small phone and touch steering does not scroll',async({page},info)=>{
-  await page.setViewportSize({width:375,height:667});await page.clock.install();await prepared(page);await start(page);await page.clock.runFor(3300);
+  await page.setViewportSize({width:375,height:667});await timedPrepared(page);await start(page);await page.clock.runFor(3300);
   const board=await page.locator('#game-canvas').boundingBox();
   expect(board.width).toBeGreaterThan(250);
-  for(const b of await page.locator('#dpad button').all()){const rect=await b.boundingBox();expect(rect.y+rect.height).toBeLessThanOrEqual(667);expect(rect.height).toBeGreaterThanOrEqual(44);}
+  const pad=await page.locator('#swipe-pad').boundingBox();expect(pad.y).toBeGreaterThan(board.y+board.height);expect(pad.y+pad.height).toBeLessThanOrEqual(667);
+  await page.locator('#arrows-mode').click();
+  for(const b of await page.locator('#dpad button').all()){const rect=await b.boundingBox();expect(rect.y+rect.height).toBeLessThanOrEqual(667);expect(rect.height).toBeGreaterThanOrEqual(48);}
+  await page.locator('#swipe-mode').click();
   const scroll=await page.evaluate(()=>scrollY);
   await page.locator('#game-canvas').dispatchEvent('pointerdown',{pointerId:1,clientX:board.x+80,clientY:board.y+100,pointerType:'touch'});
   await page.locator('#game-canvas').dispatchEvent('pointermove',{pointerId:1,clientX:board.x+80,clientY:board.y+50,pointerType:'touch'});
@@ -106,7 +115,7 @@ test('board fits a small phone and touch steering does not scroll',async({page},
 });
 
 test('backgrounding pauses an active swim',async({page})=>{
-  await page.clock.install();await prepared(page);await start(page);await page.clock.runFor(3300);
+  await timedPrepared(page);await start(page);await page.clock.runFor(3300);
   await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
   await expect(page.getByRole('heading',{name:'Your ocean can wait.'})).toBeVisible();await expect(page.locator('#countdown')).toBeHidden();
 });

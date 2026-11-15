@@ -1,4 +1,5 @@
 import { COLS, ROWS, SKINS, POWERS } from './data.js';
+import { snakePositions } from './motion.js';
 const TAU=Math.PI*2;
 function round(ctx,x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
 export class OceanRenderer {
@@ -75,7 +76,7 @@ export class OceanRenderer {
     for(const p of g.walls){c.fillStyle=this.settings.contrast?'#efb7e3':'#976eaa';round(c,p.x*cw+1,p.y*ch+1,cw-2,ch-2,Math.min(4,cw*.2));c.fillStyle='#e7b8df70';round(c,p.x*cw+cw*.24,p.y*ch+ch*.15,cw*.4,ch*.2,2);}
     for(const p of g.food)this.pearl((p.x+.5)*cw,(p.y+.5)*ch,cw*.32,p.gold,t);
     if(g.item){const p=g.item,pow=POWERS[p.type],x=(p.x+.5)*cw,y=(p.y+.5)*ch;c.fillStyle=pow.color+'25';c.strokeStyle=pow.color;c.lineWidth=1.5;c.beginPath();c.arc(x,y,cw*.43,0,TAU);c.fill();c.stroke();c.fillStyle=pow.color;c.textAlign='center';c.textBaseline='middle';c.font=`bold ${cw*.48}px system-ui`;c.fillText(pow.symbol,x,y);}
-    const points=g.snake.map((p,i)=>{const old=g.previous[i]||g.previous.at(-1)||p;const distance=Math.abs(old.x-p.x)+Math.abs(old.y-p.y);const a=distance>1?1:alpha;return{x:(old.x+(p.x-old.x)*a+.5)*cw,y:(old.y+(p.y-old.y)*a+.5)*ch};});
+    const points=snakePositions(g,alpha).map(p=>({x:(p.x+.5)*cw,y:(p.y+.5)*ch}));
     this.snake(points,SKINS.find(s=>s.id===skinId)||SKINS[0],cw,g.direction,t,g.effects.shield);
     const dt=this.last?Math.min(.05,t-this.last):.016;this.last=t;
     for(const p of this.particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;c.globalAlpha=Math.max(0,p.life/.65);c.fillStyle=p.color;c.beginPath();c.arc(p.x,p.y,2,0,TAU);c.fill();}c.globalAlpha=1;this.particles=this.particles.filter(p=>p.life>0);

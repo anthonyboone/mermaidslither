@@ -8,10 +8,10 @@ V1 code covers all four game modes, eight mazes, three difficulties, four power-
 ### Core, persistence and assets
 `npm test` checks seeded placement, buffered turns, reversal rejection, tail movement, growth, collisions, shield recovery, timed penalties/endings, active-time effects, speed caps, reachable maze layouts, food placement, full-board handling, combo limits, magnets, maze stars, safe practice, save validation, storage failures, idempotent settlement, one-time rewards, mission replacement, purchases, record separation, persistence, offline asset completeness, and PNG icon dimensions.
 
-**Result: 38/38 passing** (`npm test`), including production package validation and safe handling of unknown output folders.
+**Result: 60/60 passing** (`npm test`), including production package validation, movement/render timing, swipe/keyboard regressions and backwards-compatible control preferences.
 
 ### Browser flows
-Playwright uses desktop Chromium at 1440 × 1080 and WebKit with an iPhone 13 device configuration. **Final result: 24/24 passing** (`npm run test:browser`), including profile-edit economy regression and landscape layout checks.
+Playwright uses desktop Chromium at 1440 × 1080 and WebKit with an iPhone 13 device configuration. The original release passed 24/24 browser checks. The steering update expands this to **36 checks (18 per engine)**, run with `npm run test:browser`. Both full-engine CI jobs must pass before merging; per-commit results are available in [GitHub Actions](https://github.com/anthonyboone/mermaidslither/actions/workflows/ci.yml).
 
 Covered flows:
 - Home rendering, custom Canvas art and no horizontal overflow.
@@ -25,6 +25,7 @@ Covered flows:
 - Malformed original save remains intact and the warning is visible.
 - Successful service-worker installation and offline page/module reload with saved profile and mode launch.
 - Page-level JavaScript error checks in every test.
+- Near-corner input timing, held-key repeats, off-board continuous swipes, real captured pointer drags, saved control style, 56×48px nonoverlapping arrow targets and exact fractional pause position.
 
 Screenshots and failure traces are generated under ignored `test-results/`. Browser emulation and synthetic touch events do not certify real iPhone touch behavior, audio, or GPU performance.
 
@@ -46,6 +47,25 @@ Screenshots and failure traces are generated under ignored `test-results/`. Brow
 - [ ] Verify desktop Safari and Edge on their actual platforms; automated Chromium and WebKit are not branded-browser certification.
 - [ ] Playtest difficulty, power-up visibility and three-star time goals with the intended age group.
 - [ ] Review save migration and offline update behavior before shipping a subsequent version.
+
+## Steering-feedback regression workflow
+
+Reproduced before changing runtime code:
+- Two renderer assertions failed: at the start of a leg the logical head was x=8 while the display was x=7; halfway through it displayed x=7.5 rather than x=8.5. This was a full movement-interval visual lag.
+- A real browser regression failed: a repeated held ArrowUp event injected an unwanted Up into a quick Up/Left sequence.
+
+Steering changes:
+- Render from the committed cell towards the planned next cell and commit logic on arrival, removing the full-cell display lag and initial stationary interval.
+- Synchronize the clock at input time, ignore held-key repeats and allow a bounded near-centre turn window: at most 35ms and never more than a quarter of one cell interval. Later turns remain queued to the next safe centre; rapid input cannot generate extra movement or score.
+- Keep the exact fractional position through pause/countdown, and reset unfinished gestures safely.
+- Make an off-board swipe pad primary; retain board swipes and optional larger 56×48px nonoverlapping arrow buttons. Preserve existing saves and store the chosen style.
+- Native-pointer testing found that an offline-ready toast could cover the controls and intercept a press. Informational toast/storage overlays now pass pointer events through; regression coverage checks real hit testing and captured drags with a visible toast.
+
+Unit checks sweep inputs from 10ms before to 10ms after a corner on all difficulties and at maximum Speedy Star speed; compare 30/60/120/144Hz; check arrival-time growth, speed changes, timed endings, queue bounds and shield recovery. Browser checks cover near-corner keyboard input, key-repeat suppression, short continuous off-board swipes, scrolling, touch-target geometry, saved preferences and pause/cancel behavior. Timing-sensitive browser fixtures freeze virtual time before gameplay, so automation/network delays cannot move the snake between assertions; simulation and render deadlines still advance explicitly in the test.
+
+Upgrade smoke test passed using the previous release's actual Git files on a temporary localhost origin, followed by the new runtime: the new worker waited for the old window to close, nickname/three owned skins/123 test pearls survived, and the new input/motion modules and swipe pad worked after an offline reload. No real player data was used or read.
+
+Physical iPhone testing of thumb comfort and the perceived corner feel is still required. Browser automation cannot certify those subjective/device-specific aspects.
 
 ## Known limitations
 - Progress belongs to the current browser/device. No sync, account, or export feature; clearing site data can erase it.
