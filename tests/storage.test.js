@@ -39,3 +39,10 @@ test('invalid currency, IDs, records and settings fail validation',()=>{
   for(const mutate of [s=>s.pearls=-1,s=>s.pearls=Infinity,s=>s.buddy='bad',s=>s.owned=['bad'],s=>s.settings.music='yes',s=>s.stars.chill[0]=7,s=>s.records={'oops':[]},s=>s.name='<'.repeat(17)]){const s=freshSave();mutate(s);assert.equal(validateSave(s),false);}
 });
 test('reset requires explicit method, restores valid fresh data',()=>{const s=new SaveStore(memory());s.settle(run());s.reset();assert.equal(s.value.pearls,0);assert.equal(s.value.onboarded,false);assert.ok(validateSave(s.value));});
+test('older saves gain swipe-pad preference without losing treasures or arrow settings',()=>{
+  const m=memory(),old=freshSave();delete old.settings.touchMode;old.pearls=123;old.settings.dpad=false;m.value=JSON.stringify(old);
+  const s=new SaveStore(m);assert.equal(s.blocked,false);assert.equal(s.value.settings.touchMode,'swipe');assert.equal(s.value.settings.dpad,false);assert.equal(s.value.pearls,123);assert.ok(validateSave(s.value));
+});
+test('touch style is validated and saved without changing the save version',()=>{
+  const m=memory(),s=new SaveStore(m);s.value.settings.touchMode='arrows';s.persist();assert.equal(new SaveStore(m).value.settings.touchMode,'arrows');s.value.settings.touchMode='bad';assert.equal(validateSave(s.value),false);
+});

@@ -100,10 +100,10 @@ export function collect(g, food, grow=true) {
     const p=freeCell(g);if(p){const types=Object.keys(POWERS);g.item={...p,type:types[Math.floor(g.rng()*types.length)]};}
   }
 }
-export function step(g) {
+export function step(g,{consumeTurn=true}={}) {
   if(g.ended)return;
   g.stepCount++;g.previous=g.snake.map(p=>({...p}));
-  if(g.queue.length)g.direction=g.queue.shift();
+  if(consumeTurn&&g.queue.length)g.direction=g.queue.shift();
   const d=DIRS[g.direction],head={x:g.snake[0].x+d.x,y:g.snake[0].y+d.y};
   const food=g.food.find(f=>same(f,head));
   const body=food?g.snake:g.snake.slice(0,-1);

@@ -1,5 +1,7 @@
 import { MODES, DIFFICULTIES, SKINS, BUDDIES, MAZES, ACHIEVEMENTS, MISSION_TYPES, POWERS, COLS, ROWS } from './data.js';
-import { createGame, turn, interval, advance, step, runSummary } from './engine.js';
+import { createGame, runSummary } from './engine.js';
+import { GridMotion } from './motion.js';
+import { SwipeGesture, keyboardDirection } from './input.js';
 import { SaveStore } from './storage.js';
 import { OceanRenderer } from './render.js';
 import { OceanAudio } from './audio.js';
@@ -12,17 +14,24 @@ try{storage=window.localStorage;}catch{storage=null;}
 const store=new SaveStore(storage),save=()=>store.value;
 const audio=new OceanAudio(save().settings);
 const hero=new OceanRenderer($('hero-canvas'),save().settings),renderer=new OceanRenderer($('game-canvas'),save().settings);
-let view='home',game=null,phase='idle',accumulator=0,simulationAccumulator=0,lastFrame=0,countdownAt=0;
+let view='home',game=null,motion=null,phase='idle',lastUpdateAt=0,countdownAt=0;
 let modalType='',toastTimer,messageTimer,settlement=null,breakActive=0,breakShown=false;
 let draft={},onboardStep=0,editingProfile=false,pendingMode='classic';
 let recordMode='classic';
+const gesture=new SwipeGesture();
+const DIRECTIONS={up:'↑ Up',down:'↓ Down',left:'← Left',right:'→ Right'};
+function resetGesture(){gesture.reset();$('swipe-pad').classList.remove('steering-active');$('game-canvas').classList.remove('steering-active');}
 
 function hydrateIcons(root=document){root.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));}
 function toast(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4300);}
 function updateSettings(){
   const s=save().settings;
   document.body.classList.toggle('reduced-motion',s.reduced);document.body.classList.toggle('high-contrast',s.contrast);
-  $('dpad').hidden=!s.dpad;$('touch-controls').classList.toggle('hand-left',s.hand==='left');
+  const arrows=s.dpad&&s.touchMode==='arrows';
+  $('dpad').hidden=!arrows;$('swipe-pad').hidden=arrows;$('arrows-mode').hidden=!s.dpad;
+  document.body.classList.toggle('arrows-active',arrows);
+  $('swipe-mode').setAttribute('aria-pressed',String(!arrows));$('arrows-mode').setAttribute('aria-pressed',String(arrows));
+  $('touch-controls').classList.toggle('hand-left',s.hand==='left');
   $('game-sound').style.opacity=s.sound?'1':'.45';$('game-sound').setAttribute('aria-pressed',String(s.sound));
   hero.settings=s;renderer.settings=s;audio.settings=s;
   if(s.music&&!document.hidden)audio.play();else audio.stop();
@@ -114,14 +123,14 @@ function tutorialPrompt(){openModal('tutorial-prompt',`<div class="modal-inner">
 function startGame(mode='classic',stage=0,tutorial=false){
   closeModal();audio.unlock();audio.play();
   game=createGame({mode,difficulty:tutorial?'chill':save().settings.difficulty,stage,tutorial});settlement=null;renderer.particles=[];renderer.popups=[];
-  accumulator=0;simulationAccumulator=0;phase='countdown';countdownAt=performance.now();
+  motion=new GridMotion(game);resetGesture();lastUpdateAt=0;phase='countdown';countdownAt=performance.now();
   setView('game');$('countdown').hidden=false;$('countdown-number').textContent='3';
   $('game-title').textContent=tutorial?'Find your fins':mode==='maze'?MAZES[stage].name:MODES[mode].name;
   $('game-difficulty').textContent=tutorial?'A SAFE LITTLE PRACTICE':`${DIFFICULTIES[game.difficulty].name.toUpperCase()}${mode==='maze'?` · REEF ${stage+1} / 8`:''}`;
   const buddy=BUDDIES.find(p=>p.id===save().buddy);
   $('game-buddy').innerHTML=buddyArt(buddy.id);$('game-buddy-name').textContent=buddy.name;$('game-buddy-line').textContent=buddy.line;
   $('mode-instruction').textContent=tutorial?'Collect three pearls. Your practice shield will always help you try again.':MODES[mode].goal;
-  $('game-hint').textContent=tutorial?'Collect 3 pearls. Swipe or tap arrows to turn.':'Swipe anywhere on the ocean to steer';
+  $('game-hint').textContent=tutorial?'Collect 3 pearls. Swipe below to steer.':'Swipe below. Keep your ocean in view.';
   updateHUD();game.events=[];
 }
 function updateHUD(){
@@ -135,15 +144,18 @@ function updateHUD(){
   const effects=Object.entries(game.effects).filter(([id,t])=>id==='shield'?t:t>game.elapsed).map(([id,t])=>`<span class="effect-pill">${POWERS[id].symbol} ${id==='shield'?'Shield':Math.ceil(t-game.elapsed)+'s'}</span>`).join('');
   if($('effect-pills').innerHTML!==effects)$('effect-pills').innerHTML=effects;
   if(game.mode==='speed'&&best('speed',game.difficulty)>0)$('game-hint').textContent=game.score>=best('speed',game.difficulty)?'You’re ahead of your personal best!':`${best('speed',game.difficulty)-game.score} points to catch your best`;
+  const next=game.queue[0]||game.direction;
+  $('steering-status').textContent=DIRECTIONS[next]+(game.queue.length?' next':'');
+  $('steering-status').dataset.direction=next;
 }
 function boardMessage(text){$('board-message').textContent=text;$('board-message').classList.add('visible');clearTimeout(messageTimer);messageTimer=setTimeout(()=>$('board-message').classList.remove('visible'),1800);}
 function pause(show=true){
   if(!game||!['playing','countdown'].includes(phase))return;
-  phase='paused';$('countdown').hidden=true;accumulator=0;simulationAccumulator=0;audio.stop();
+  phase='paused';$('countdown').hidden=true;resetGesture();audio.stop();
   if(show)pauseDialog();
 }
 function pauseDialog(){openModal('pause',`<div class="modal-inner"><div class="modal-art">${buddyArt(save().buddy)}</div><span class="eyebrow">A LITTLE BREATHER</span><h2>Your ocean can wait.</h2><p class="muted">Stretch your fingers. Your swim is right where you left it.</p><div class="modal-actions"><button class="button primary" data-action="resume">${icon('play')}Keep swimming</button><button class="button secondary" data-action="restart-confirm">Start a fresh swim</button><button class="text-button" style="justify-content:center" data-action="leave-confirm" data-value="home">Back to the ocean</button></div></div>`);}
-function resume(){if(!game||game.ended)return;closeModal();audio.unlock();audio.play();phase='countdown';countdownAt=performance.now();$('countdown').hidden=false;$('countdown-number').textContent='3';accumulator=0;simulationAccumulator=0;}
+function resume(){if(!game||game.ended)return;closeModal();audio.unlock();audio.play();phase='countdown';countdownAt=performance.now();$('countdown').hidden=false;$('countdown-number').textContent='3';resetGesture();}
 function requestNavigate(next){
   if(view==='game'&&game&&!game.ended){pause(false);confirmLeave(next);return;}
   closeModal();phase='idle';setView(next);
@@ -163,12 +175,12 @@ function finishRun(){
 function settingsDialog(){
   if(view==='game'&&!game.ended)pause(false);
   const s=save().settings;
-  const rows=[['sound','Sound effects','Pearl pops and happy little splashes'],['music','Ocean music','A gentle, synthesized ocean melody'],['reduced','Reduced motion','Less drift, no particles or camera effects'],['contrast','High contrast','Clearer text, obstacles and boundaries'],['dpad','On-screen arrows','An alternative to swipe controls']];
+  const rows=[['sound','Sound effects','Pearl pops and happy little splashes'],['music','Ocean music','A gentle, synthesized ocean melody'],['reduced','Reduced motion','Less drift, no particles or camera effects'],['contrast','High contrast','Clearer text, obstacles and boundaries'],['dpad','Optional arrow controls','Show the Arrows option beside Swipe pad']];
   openModal('settings',`<div class="modal-inner">${closeButton}<span class="eyebrow">MAKE YOURSELF AT HOME</span><h2>Your kind of ocean.</h2><div class="settings-list">${rows.map(([id,title,desc])=>`<label class="setting-row"><span><strong>${title}</strong><small>${desc}</small></span><input type="checkbox" data-setting="${id}" ${s[id]?'checked':''}></label>`).join('')}<label class="setting-row"><strong>Arrow position</strong><select data-setting="hand"><option value="left" ${s.hand==='left'?'selected':''}>Left-handed</option><option value="right" ${s.hand==='right'?'selected':''}>Right-handed</option></select></label><label class="setting-row"><span><strong>Difficulty for new swims</strong><small>Each difficulty has its own records</small></span><select data-setting="difficulty">${Object.entries(DIFFICULTIES).map(([id,d])=>`<option value="${id}" ${s.difficulty===id?'selected':''}>${d.name}</option>`).join('')}</select></label></div><p class="settings-foot">Progress stays in this browser on this device. Clearing browser data can erase it. No accounts, tracking, purchases, or online chat.<br><br>On iPhone: open in Safari, tap Share, then Add to Home Screen. Offline play is available after the app has cached successfully.</p><button class="text-button danger-button" data-action="reset-confirm">Reset this device’s progress</button><div class="modal-actions"><button class="button primary" data-action="close-modal">Just right ${icon('check')}</button></div></div>`);
 }
 function helpDialog(){
   if(view==='game'&&!game.ended)pause(false);
-  openModal('help',`<div class="modal-inner">${closeButton}<span class="eyebrow">A LITTLE KNOW-HOW</span><h2>Find your flow.</h2><div class="help-list"><div>${icon('wave')}<section><h3>Follow your fins</h3><p>Swipe up, down, left or right on the ocean. Use on-screen arrows, arrow keys or WASD. Your snake keeps swimming; you can’t turn straight back into yourself.</p></section></div><div>${icon('pearl')}<section><h3>A little pearl magic</h3><p>White pearls start at 10 points. Golden ones start at 30! Find pearls within 4 seconds to build a ×5 combo. Five in a row starts a six-second Pearl Party.</p></section></div><div>${icon('shell')}<section><h3>Collect a little help</h3><p>◇ shields one crash · ❄ slows your snake · U collects nearby pearls · ×2 doubles your points. Glowing symbols show what’s active.</p></section></div><div>${icon('heart')}<section><h3>Play your own way</h3><p>Chill starts slower with a shield. Classic and Speedy end on an unprotected crash; Time Twist respawns you with a 30-point penalty. Maze stars reward finishing, good time, and a clean fast swim.</p></section></div><div>${icon('trophy')}<section><h3>Your only competition is you</h3><p>Earn pearls, complete little quests, and dress up your snake. Scores stay on this device. No strangers, deadlines, or lost streaks. Press Space or Escape to take a break.</p></section></div></div><div class="modal-actions"><button class="button primary" data-action="close-modal">Ready to make waves</button><button class="text-button" style="justify-content:center" data-action="practice-request">Try the safe practice swim</button></div></div>`);
+  openModal('help',`<div class="modal-inner">${closeButton}<span class="eyebrow">A LITTLE KNOW-HOW</span><h2>Find your flow.</h2><div class="help-list"><div>${icon('wave')}<section><h3>Follow your fins</h3><p>Swipe on the pad below the ocean to keep your finger out of the way. You can also swipe on the board, choose bigger on-screen arrows, or use arrow keys / WASD. Short swipes turn as you move—no need to lift your finger. You can’t turn straight back into yourself.</p></section></div><div>${icon('pearl')}<section><h3>A little pearl magic</h3><p>White pearls start at 10 points. Golden ones start at 30! Find pearls within 4 seconds to build a ×5 combo. Five in a row starts a six-second Pearl Party.</p></section></div><div>${icon('shell')}<section><h3>Collect a little help</h3><p>◇ shields one crash · ❄ slows your snake · U collects nearby pearls · ×2 doubles your points. Glowing symbols show what’s active.</p></section></div><div>${icon('heart')}<section><h3>Play your own way</h3><p>Chill starts slower with a shield. Classic and Speedy end on an unprotected crash; Time Twist respawns you with a 30-point penalty. Maze stars reward finishing, good time, and a clean fast swim.</p></section></div><div>${icon('trophy')}<section><h3>Your only competition is you</h3><p>Earn pearls, complete little quests, and dress up your snake. Scores stay on this device. No strangers, deadlines, or lost streaks. Press Space or Escape to take a break.</p></section></div></div><div class="modal-actions"><button class="button primary" data-action="close-modal">Ready to make waves</button><button class="text-button" style="justify-content:center" data-action="practice-request">Try the safe practice swim</button></div></div>`);
 }
 function dismissModal(){
   if(['pause','confirm'].includes(modalType)){pauseDialog();return;}
@@ -202,6 +214,7 @@ document.addEventListener('click',event=>{
   else if(action==='pause-dialog')pauseDialog();
   else if(action==='resume')resume();
   else if(action==='game-sound'){save().settings.sound=!save().settings.sound;store.persist();updateSettings();}
+  else if(action==='touch-mode'){save().settings.touchMode=value;resetGesture();store.persist();updateSettings();}
   else if(action==='restart-confirm')confirmLeave('home',true);
   else if(action==='leave-confirm')confirmLeave(value);
   else if(action==='restart'||action==='retry')startGame(game.mode,game.stage,game.tutorial);
@@ -222,25 +235,37 @@ document.addEventListener('keydown',e=>{
   if(e.target.matches('input,select,textarea'))return;
   if($('modal').open){if(e.key==='Enter'&&modalType==='results'&&e.target===document.body){e.preventDefault();startGame(game.mode,game.stage);}return;}
   if(view!=='game')return;
-  const map={ArrowUp:'up',w:'up',W:'up',ArrowDown:'down',s:'down',S:'down',ArrowLeft:'left',a:'left',A:'left',ArrowRight:'right',d:'right',D:'right'};
-  if(map[e.key]){e.preventDefault();if(phase==='playing')turn(game,map[e.key]);}
+  const direction=keyboardDirection(e);
+  if(direction){e.preventDefault();steer(direction);}
+  else if(e.repeat&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();
   if((e.code==='Space'||e.key==='Escape')&&!e.repeat){e.preventDefault();pause();}
 });
-let pointer=null;
-$('game-canvas').addEventListener('pointerdown',e=>{
-  if(phase!=='playing')return;e.preventDefault();pointer={x:e.clientX,y:e.clientY,id:e.pointerId};
-  if(e.isTrusted)$('game-canvas').setPointerCapture(e.pointerId);
-});
-$('game-canvas').addEventListener('pointermove',e=>{
-  if(!pointer||pointer.id!==e.pointerId||phase!=='playing')return;
-  const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;
-  if(Math.max(Math.abs(dx),Math.abs(dy))<16)return;
-  turn(game,Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up');pointer.x=e.clientX;pointer.y=e.clientY;
-});
-for(const event of ['pointerup','pointercancel','lostpointercapture'])$('game-canvas').addEventListener(event,()=>pointer=null);
-$('dpad').addEventListener('pointerdown',e=>{const button=e.target.closest('[data-direction]');if(!button)return;e.preventDefault();audio.unlock();if(phase==='playing')turn(game,button.dataset.direction);});
+function steer(direction){
+  if(phase!=='playing')return false;
+  // Process time up to the input before deciding which corner it belongs to.
+  syncGameplay(performance.now());
+  if(phase!=='playing')return false;
+  const accepted=motion.turn(direction);if(accepted)updateHUD();return accepted;
+}
+for(const surface of [$('game-canvas'),$('swipe-pad')]){
+  surface.addEventListener('pointerdown',e=>{
+    if(phase!=='playing'||e.button>0||!gesture.start(e.pointerId,e.clientX,e.clientY))return;
+    e.preventDefault();if(e.isTrusted)surface.setPointerCapture(e.pointerId);
+    surface.classList.add('steering-active');
+  });
+  const move=e=>{
+    if(phase!=='playing')return;
+    const direction=gesture.move(e.pointerId,e.clientX,e.clientY);
+    if(direction){e.preventDefault();steer(direction);}
+  };
+  surface.addEventListener('pointermove',move);
+  surface.addEventListener('pointerup',e=>{move(e);gesture.end(e.pointerId);if(!gesture.pointer)surface.classList.remove('steering-active');});
+  for(const type of ['pointercancel','lostpointercapture'])surface.addEventListener(type,e=>{gesture.end(e.pointerId);if(!gesture.pointer)surface.classList.remove('steering-active');});
+}
+$('dpad').addEventListener('pointerdown',e=>{const button=e.target.closest('[data-direction]');if(!button||e.button>0)return;e.preventDefault();audio.unlock();steer(button.dataset.direction);});
+$('dpad').addEventListener('click',e=>{const button=e.target.closest('[data-direction]');if(button&&e.detail===0)steer(button.dataset.direction);});
 function backgrounded(){
-  pointer=null;
+  resetGesture();
   if(view==='game'&&game&&!game.ended&&['playing','countdown'].includes(phase))pause();
   audio.suspend();
 }
@@ -248,23 +273,22 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)backgrounde
 window.addEventListener('blur',backgrounded);
 window.addEventListener('pagehide',backgrounded);
 let lastHud=0;
+function syncGameplay(now){
+  if(phase!=='playing')return;
+  if(now<=lastUpdateAt)return;
+  const milliseconds=Math.min(now-lastUpdateAt,50);lastUpdateAt=now;
+  const before=game.elapsed;motion.update(milliseconds);breakActive+=game.elapsed-before;
+  for(const e of game.events){audio.effect(e.type,game.combo);if(e.type==='eat')renderer.burst(e);if(e.text)boardMessage(e.text);}
+  game.events=[];
+  if(game.ended)finishRun();
+  else if(!breakShown&&breakActive>=1200){breakShown=true;pause();toast('You’ve made lots of waves! Time for a stretch and a drink of water?');}
+}
 function frame(now){
-  const dt=lastFrame?Math.min((now-lastFrame)/1000,.05):0;lastFrame=now;
   if(view==='home')hero.hero(save().settings.reduced?0:now/1000,save().skin);
   if(view==='game'&&game){
-    if(phase==='countdown'&&!document.hidden){const elapsed=(now-countdownAt)/1000;$('countdown-number').textContent=String(Math.max(1,3-Math.floor(elapsed)));if(elapsed>=3){phase='playing';$('countdown').hidden=true;lastFrame=now;accumulator=0;simulationAccumulator=0;}}
-    else if(phase==='playing'&&!document.hidden){
-      simulationAccumulator+=dt;breakActive+=dt;
-      while(simulationAccumulator>=1/60&&!game.ended){
-        advance(game,1/60);simulationAccumulator-=1/60;accumulator+=1000/60;
-        if(!game.ended&&accumulator>=interval(game)){accumulator-=interval(game);step(game);}
-      }
-      for(const e of game.events){audio.effect(e.type,game.combo);if(e.type==='eat')renderer.burst(e);if(e.text)boardMessage(e.text);}
-      game.events=[];
-      if(game.ended)finishRun();
-      if(!breakShown&&breakActive>=1200&&!game.ended){breakShown=true;pause();toast('You’ve made lots of waves! Time for a stretch and a drink of water?');}
-    }
-    renderer.draw(game,phase==='playing'?Math.min(1,accumulator/interval(game)):1,save().settings.reduced?0:now/1000,save().skin);
+    if(phase==='countdown'&&!document.hidden){const elapsed=(now-countdownAt)/1000;$('countdown-number').textContent=String(Math.max(1,3-Math.floor(elapsed)));if(elapsed>=3){phase='playing';$('countdown').hidden=true;lastUpdateAt=now;}}
+    else if(phase==='playing'&&!document.hidden)syncGameplay(now);
+    renderer.draw(game,motion.progress,save().settings.reduced?0:now/1000,save().skin);
     if(now-lastHud>100){updateHUD();lastHud=now;}
   }
   requestAnimationFrame(frame);

@@ -5,7 +5,7 @@ const str=v=>typeof v==='string';
 const skinIds=SKINS.map(s=>s.id);
 export function freshSave() {
   return { version:1, onboarded:false, name:'Pearl', buddy:'turtle', skin:'lagoon', owned:[], pearls:0,
-    settings:{difficulty:'adventure',music:false,sound:true,reduced:globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false,contrast:false,dpad:true,hand:'right'},
+    settings:{difficulty:'adventure',music:false,sound:true,reduced:globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false,contrast:false,dpad:true,hand:'right',touchMode:'swipe'},
     totals:{runs:0,food:0,modes:[]},achievements:[],missions:[0,1,2].map(type=>({type,progress:0})),missionCursor:3,
     records:{},stars:{chill:Array(8).fill(0),adventure:Array(8).fill(0),turbo:Array(8).fill(0)},settled:[],
   };
@@ -16,6 +16,7 @@ export function validateSave(s) {
   if(s.onboarded&&(!s.owned.includes(s.skin)||s.owned.length<3))return false;
   if(!num(s.pearls)||!s.settings||!DIFFICULTIES[s.settings.difficulty]||!['left','right'].includes(s.settings.hand))return false;
   if(!['music','sound','reduced','contrast','dpad'].every(k=>typeof s.settings[k]==='boolean'))return false;
+  if(s.settings.touchMode!==undefined&&!['swipe','arrows'].includes(s.settings.touchMode))return false;
   if(!s.totals||!num(s.totals.runs)||!num(s.totals.food)||!Array.isArray(s.totals.modes)||s.totals.modes.length>4||!s.totals.modes.every(m=>Object.keys(MODES).includes(m)))return false;
   if(!Array.isArray(s.achievements)||s.achievements.length>12||!s.achievements.every(id=>ACHIEVEMENTS.some(a=>a.id===id)))return false;
   if(!Array.isArray(s.missions)||s.missions.length!==3||!s.missions.every(m=>m&&Number.isInteger(m.type)&&m.type>=0&&m.type<MISSION_TYPES.length&&num(m.progress))||!num(s.missionCursor))return false;
@@ -34,6 +35,7 @@ export class SaveStore {
     try {
       const raw=storage?.getItem(SAVE_KEY);
       if(raw){const parsed=JSON.parse(raw);if(!validateSave(parsed))throw new Error('Invalid save');this.value=parsed;}
+      this.value.settings.touchMode??='swipe';
     } catch {this.blocked=true;this.warning='Your saved data could not be read. It has not been overwritten. You can play temporarily, or reset it in Settings.';}
   }
   persist() {

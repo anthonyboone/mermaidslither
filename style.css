@@ -16,3 +16,37 @@ body{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left)
 @media(max-width:520px){.mobile-nav{display:flex;height:auto;gap:0;border:1px solid var(--border);background:#103c4b66;border-radius:11px;justify-content:space-around;margin:-2px 0 20px;padding:3px}.mobile-nav button{border:0;background:none;padding:10px 9px;font-size:10px;color:var(--muted);min-height:39px}.mobile-nav button:hover{color:var(--mint)}.game-active .mobile-nav{display:none}.game-active .play-layout{grid-template-columns:minmax(0,min(100%,calc((100dvh - 315px)*22/26)))}}
 @media(max-width:520px){.game-active .play-layout{grid-template-columns:minmax(0,min(100%,calc((100dvh - 335px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*22/26)))}.dpad{height:110px}}
 @media(max-height:500px) and (orientation:landscape){.game-active .site-header{height:46px}.game-active main{padding-top:6px}.game-heading{margin-bottom:6px}.game-heading h1{font-size:16px}.game-heading .eyebrow{font-size:6px}.game-heading .icon-button{height:34px;width:34px;min-width:34px}.game-active .play-layout{display:block;width:min(100%,calc((100dvh - 175px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*22/26));position:relative}.play-sidebar{display:none}.game-hud{padding-bottom:6px}.game-hud strong{font-size:20px}.game-hud span{font-size:6px}.game-active .touch-controls{position:fixed;right:max(20px,env(safe-area-inset-right));bottom:30px;width:145px;min-height:0;padding:0;display:block}.game-active .touch-controls.hand-left{right:auto;left:max(20px,env(safe-area-inset-left))}.game-active .touch-controls>p{margin-bottom:7px;font-size:8px;max-width:130px}.game-active .dpad{display:grid}.game-active .effect-bar{min-height:30px;font-size:8px}}
+
+/* A dedicated steering surface keeps fingers out of the playfield. */
+.toast,.storage-warning{pointer-events:none}
+.touch-controls{display:flex;flex-direction:column;gap:8px;min-height:0;padding-bottom:env(safe-area-inset-bottom);align-items:stretch}
+.control-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}
+.control-modes{display:flex;gap:3px;background:#061f2d66;border:1px solid var(--border);border-radius:10px;padding:2px}
+.control-modes button{min-height:44px;border:0;border-radius:7px;padding:6px 10px;font-size:10px;background:none;color:var(--muted)}
+.control-modes button[aria-pressed=true]{background:#245560;color:var(--mint)}
+#steering-status{color:var(--mint);font-size:10px;white-space:nowrap}
+.swipe-pad{height:78px;min-height:78px;display:flex;align-items:center;justify-content:center;gap:17px;padding:12px;border:1px solid #a2f0d34a;border-radius:15px;background:linear-gradient(135deg,#1a555e,#123e4d);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:grab}
+.swipe-pad.steering-active{border-color:var(--mint);background:#215e68;box-shadow:inset 0 0 25px #a2f0d30c;cursor:grabbing}
+.swipe-pad:focus-visible{outline:3px solid var(--coral);outline-offset:3px}
+.swipe-pad strong{font-size:12px;display:block;color:var(--mint)}
+.swipe-pad p{font-size:9px;color:var(--muted);line-height:1.5;margin-top:3px;max-width:170px}
+.swipe-compass{font-size:30px;line-height:1;position:relative;width:35px;height:35px;display:grid;place-items:center;color:#a2f0d3b0;flex-shrink:0}
+.swipe-compass i{position:absolute;font-style:normal;font-size:30px;inset:0;display:grid;place-items:center}
+.touch-controls .dpad{display:grid;grid-template-columns:repeat(3,56px);grid-template-rows:repeat(2,48px);gap:6px;height:102px;align-self:flex-end}
+.touch-controls.hand-left .dpad{align-self:flex-start}
+.touch-controls .dpad button{min-height:48px;height:48px;font-size:23px;border-radius:12px}
+.touch-controls .dpad button:nth-child(1){grid-column:2;grid-row:1}
+.touch-controls .dpad button:nth-child(2){grid-column:1;grid-row:2}
+.touch-controls .dpad span{display:none}
+.touch-controls .dpad button:nth-child(4){grid-column:3;grid-row:2}
+.touch-controls .dpad button:nth-child(5){grid-column:2;grid-row:2}
+@media(max-width:800px) and (orientation:portrait){
+  .game-active .play-layout{grid-template-columns:minmax(0,min(100%,calc((100dvh - 355px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*22/26)))}
+  .game-active.arrows-active .play-layout{grid-template-columns:minmax(0,min(100%,calc((100dvh - 379px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*22/26)))}
+}
+@media(min-width:801px) and (min-height:651px) and (pointer:fine){.touch-controls{display:none}}
+@media(max-height:500px) and (orientation:landscape){
+  .game-active .touch-controls{display:flex;flex-direction:column;width:180px;bottom:max(16px,env(safe-area-inset-bottom));padding:0;gap:8px}
+  .control-toolbar{gap:5px}.control-modes button{font-size:9px;padding:6px}.control-modes{gap:0}#steering-status{font-size:9px}
+  .swipe-pad{height:98px;min-height:98px;gap:10px;padding:9px}.swipe-pad strong{font-size:10px}.swipe-pad p{font-size:8px}.swipe-compass{width:27px;font-size:25px}
+}

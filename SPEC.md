@@ -7,6 +7,8 @@ Ocean-themed Snake for ages 8–9. Portrait-first iPhone Safari, responsive desk
 - `index.html` / `style.css`: accessible shell, responsive views, dialogs, HUD.
 - `js/data.js`: skins, buddies, mode/difficulty constants, handcrafted maze layouts, achievements and mission definitions.
 - `js/engine.js`: pure seeded simulation, movement/collision/spawn/scoring/power-ups; no DOM dependencies.
+- `js/motion.js`: cell-arrival movement clock, bounded corner forgiveness and forward-interpolated snake positions.
+- `js/input.js`: repeat-safe keyboard mapping and single-pointer continuous swipe recognition.
 - `js/storage.js`: versioned local save validation, run settlement, achievements, missions, purchase logic.
 - `js/render.js`: interpolated Canvas renderer, particles, SVG snake previews, adaptive effects.
 - `js/audio.js`: gesture-unlocked synthesized music/effects, mute/background suspension.
@@ -18,8 +20,9 @@ Views: home, collection, maze selection, onboarding/tutorial, playing, pause, co
 
 ## Board and movement
 - 22 × 26 cells in every mode. Collision is grid exact; render positions interpolate.
-- Fixed-step movement based on selected difficulty; bounded render delta and catch-up prevent large background jumps.
-- Direction changes buffered (maximum two); reject reversal against the last queued direction.
+- Discrete cell-arrival steps with continuous interpolation from the committed cell towards the planned next cell; the picture must not trail logical position by a complete movement interval. Movement duration is selected at each cell boundary, independent of display refresh rate.
+- Synchronize active simulation time to each input before choosing its corner; bound per-update catch-up to 50ms after a stall. Pause freezes the exact fractional travel position; countdown time never advances the run.
+- Direction changes buffered (maximum two future turns); reject reversal against the last queued direction. Ignore OS held-key repeats and modifier shortcuts. A fresh perpendicular turn may re-plan an otherwise unsteered leg within min(35ms, 25% of its duration) of a cell centre; no extra movement, score, reordered queued turns, or later mid-cell re-planning.
 - Moving into the vacating tail is legal if not growing.
 - Food cannot overlap the snake, obstacles, other food or power-ups.
 - Spawn candidates must be reachable from the head considering static walls. A board with no remaining free cells is a victory; no empty-candidate random loops.
@@ -62,9 +65,11 @@ Eight fixed Candy Coral layouts; targets increase by stage. Completion awards on
 One versioned localStorage record includes profile, owned skins, currency, settings, totals, achievements, missions, stage stars and records. Validate types, ranges, IDs and array lengths. Malformed/unsupported saves are not overwritten automatically; surface a warning and keep the original data until explicit reset. Failed writes use in-memory progress and warn the player. No nickname upload or cross-device sync. Reset requires confirmation. Clearing browser data can remove progress. Service-worker caches contain app files only, not player records.
 
 ## Input, audio and accessibility
-- Swipe board; optional D-pad (left/right handed), arrows/WASD. Space/Escape pause; Enter retries from results. Direction input only affects gameplay, never typing fields.
+- Default to an off-board swipe pad, below the ocean in portrait and beside it in landscape, so fingers do not hide the playfield. Retain board swipes and optional left/right-handed arrows. Save the chosen Swipe pad / Arrows style; older saves default to Swipe pad without losing progress or other settings.
+- Swipes trigger at 12 CSS pixels of movement, not finger release; rebase after a recognised stroke to permit continuous corners. Ignore secondary fingers, and reset gestures on cancellation, pause, style change and backgrounding. Arrow buttons have separate, nonoverlapping 56×48px targets in an inverted-T layout. Keyboard arrows/WASD remain supported.
+- Space/Escape pause; Enter retries from results. Direction input only affects gameplay, never typing fields.
 - Touch controls are at least 44px. Safe-area insets, no browser scroll gestures on board, no global zoom blocking.
-- On blur/visibility change: pause, clear accumulator, suspend audio. Resume with 3/2/1 countdown. Resume countdown canceled if backgrounded.
+- On blur/visibility change: pause at the current fractional position, reset gestures and suspend audio. Resume with 3/2/1 countdown and a fresh time origin, without snapping the snake to another cell. Resume countdown canceled if backgrounded.
 - AudioContext created/resumed following gesture only; separate music/effects switches. Synthesized ambient music and eat/gold/crash/win cues.
 - Honor prefers-reduced-motion initially; setting available. Disable decorative drift/particles/shake in reduced motion. High-contrast obstacles and item shapes distinct from color alone.
 - Break reminder after ~20 active minutes, at a safe pause/results boundary. No autoplay or punitive missed-day prompts.
