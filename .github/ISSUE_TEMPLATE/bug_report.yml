@@ -1,0 +1,36 @@
+name: Bug report
+description: Something in the ocean needs a little help.
+title: "Bug: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem without sharing a child's name, private information, or browser save data.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Choose a mode…"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: iPhone 13, Safari, iOS version
+    validations:
+      required: true
+  - type: input
+    id: mode
+    attributes:
+      label: Mode and difficulty
+      placeholder: Classic, Chill

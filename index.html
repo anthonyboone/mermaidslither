@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#092e3d">
+  <meta name="description" content="A little ocean magic. Four delightful Snake adventures, your own mermaid snake, and a sea of treasures. Play free, even offline.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+  <title>Mermaid Slither · A little ocean magic</title>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="ambient" aria-hidden="true"></div>
+  <header class="site-header">
+    <button class="brand" data-action="home" aria-label="Mermaid Slither home"><span class="brand-icon" data-icon="shell"></span><span>mermaid<span class="brand-light">slither</span><small>A LITTLE OCEAN MAGIC</small></span></button>
+    <nav aria-label="Main navigation"><button class="nav-item active" id="nav-play" data-action="home">Let’s play</button><button class="nav-item" id="nav-collection" data-action="collection">Your treasures</button><button class="nav-item" data-action="help">How to play</button></nav>
+    <div class="header-tools"><span class="pearl-wallet" title="Earned pearls"><span data-icon="pearl"></span><b id="wallet">0</b><span class="wallet-label">pearls</span></span><button class="icon-button" data-action="settings" aria-label="Settings"><span data-icon="settings"></span></button><button class="profile-button" data-action="profile" aria-label="Your snake and buddy"><span id="profile-letter">P</span></button></div>
+  </header>
+  <main id="main" tabindex="-1">
+    <nav class="mobile-nav" aria-label="Ocean navigation"><button data-action="home">Let’s play</button><button data-action="collection">Treasures</button><button data-action="profile">Your snake</button><button data-action="help" aria-label="How to play">How to play</button></nav>
+    <section id="home-view" class="view">
+      <div class="welcome-line"><span><span class="tiny-dot"></span> YOUR OCEAN IS WAITING</span><span class="welcome-name" id="welcome-name">A new adventure, just for you.</span></div>
+      <div class="home-top">
+        <article class="hero">
+          <div class="hero-copy"><div class="eyebrow"><span class="mini-line"></span> DIVE INTO YOUR HAPPY PLACE</div><h1>A little magic.<br>A lot of <em>adventure.</em></h1><p>Follow your fins. Find your sparkle.<br>There’s a whole ocean to explore.</p><button class="button primary" data-action="quickplay"><span data-icon="play"></span>Let’s make a splash<span data-icon="arrow"></span></button><div class="hero-foot"><span class="tiny-dot"></span> YOUR NEXT PERSONAL BEST STARTS HERE</div></div>
+          <div class="hero-art"><canvas id="hero-canvas" aria-label="An illustrated mermaid snake swimming through a magical reef" role="img"></canvas><span class="art-tag tag-top"><i></i>100% you. 100% magic.</span><span class="art-tag tag-bottom"><span data-icon="pearl"></span> A sea of possibilities</span></div>
+        </article>
+        <aside class="buddy-card"><div class="card-eyebrow">YOUR LITTLE SIDEKICK<span class="sparkle">✧</span></div><div id="home-buddy" class="buddy-portrait"></div><h2 id="buddy-name">Meet Clover</h2><p id="buddy-line">One pearl at a time.<br>You’ve got this!</p><button class="text-button" data-action="profile">Make it your own<span data-icon="arrow"></span></button><div class="buddy-card-bottom"><span data-icon="heart"></span> A friend for every adventure</div></aside>
+      </div>
+      <button class="mobile-buddy" data-action="profile"><span id="mobile-buddy-art"></span><span><strong id="mobile-buddy-name">Clover’s cheering for you.</strong><small id="mobile-buddy-line">One pearl at a time. You’ve got this!</small></span><span data-icon="heart"></span></button>
+      <section class="adventures" aria-labelledby="adventure-title"><div class="section-heading"><div><span class="eyebrow">FOUR WAYS TO MAKE WAVES</span><h2 id="adventure-title">Choose your adventure<span class="heading-dot">.</span></h2></div><div class="difficulty-switch" role="group" aria-label="Difficulty" id="difficulty-switch"></div></div><div class="mode-grid" id="mode-grid"></div></section>
+      <section class="bottom-grid"><article class="mission-panel"><div class="panel-title"><h2><span data-icon="shell"></span>Little quests, big smiles</h2><span>NO RUSH. JUST FUN.</span></div><div id="home-missions" class="mission-grid"></div></article><article class="record-panel"><span class="record-icon" data-icon="trophy"></span><div><span class="eyebrow">YOUR ONLY COMPETITION? YOU.</span><h3 id="home-record">Your first best is waiting.</h3><p>Little improvements. Ocean-sized celebrations.</p></div></article></section>
+    </section>
+    <section id="collection-view" class="view" hidden><div class="section-heading"><div><span class="eyebrow">A COLLECTION AS UNIQUE AS YOU</span><h1>Your treasures<span class="heading-dot">.</span></h1><p class="muted">Earn pearls by playing. Find a new favorite. All sparkle, no superpowers.</p></div><button class="button secondary" data-action="home"><span data-icon="arrow" class="back-arrow"></span>Back to the ocean</button></div><h2 class="subheading">Your mermaid wardrobe <span id="skin-count"></span></h2><div class="skin-grid" id="skin-grid"></div><h2 class="subheading">Your ocean friends</h2><div class="pet-grid" id="pet-grid"></div><div class="section-heading compact"><div><span class="eyebrow">LITTLE MOMENTS WORTH CELEBRATING</span><h2>Your adventure badges</h2></div><span id="achievement-count" class="muted"></span></div><div class="achievement-grid" id="achievement-grid"></div><div class="section-heading compact"><h2>Your best swims</h2><select id="record-mode" aria-label="Record mode"></select></div><div id="record-list" class="record-list"></div></section>
+    <section id="maze-view" class="view" hidden><button class="text-button" data-action="home"><span data-icon="arrow" class="back-arrow"></span>Back to adventures</button><div class="maze-intro"><span class="eyebrow">A SWEET LITTLE OCEAN EXPEDITION</span><h1>Candy Coral Maze<span class="heading-dot">.</span></h1><p class="muted">Eight magical reefs. Take your time, learn the turns, collect every star.</p><p class="maze-difficulty" id="maze-difficulty"></p></div><div class="maze-grid" id="maze-grid"></div></section>
+    <section id="game-view" class="view" hidden>
+      <div class="game-heading"><button class="icon-button" data-action="pause" aria-label="Pause game"><span data-icon="pause"></span></button><div><span class="eyebrow" id="game-difficulty">ADVENTURE</span><h1 id="game-title">Classic Snake Run</h1></div><button class="icon-button" data-action="game-sound" id="game-sound" aria-label="Toggle sound"><span data-icon="sound"></span></button></div>
+      <div class="play-layout"><aside class="play-sidebar"><div class="play-note"><span class="eyebrow">YOUR LITTLE CHEER SQUAD</span><div id="game-buddy"></div><h2 id="game-buddy-name">Clover</h2><p id="game-buddy-line">You’ve got this!</p></div><div class="controls-note"><h3>Find your flow</h3><p>Swipe to steer.<br>Or use arrow keys / WASD.</p><div class="key-row"><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></div><p><kbd>Space</kbd> to pause</p></div></aside>
+      <div class="board-column"><div class="game-hud"><div><span>SCORE</span><strong id="hud-score">0</strong></div><div class="hud-goal"><span id="hud-goal-label">PEARLS</span><strong id="hud-goal">0</strong></div><div><span>PERSONAL BEST</span><strong id="hud-best">0</strong></div></div><div class="board-wrap" id="board-wrap"><canvas id="game-canvas" role="img" aria-label="Snake game board. Swipe or use arrow keys to collect pearls and avoid your tail."></canvas><div class="board-message" id="board-message" aria-live="polite"></div><div class="countdown" id="countdown" hidden><span>READY, LITTLE MERMAID?</span><strong id="countdown-number">3</strong></div></div><div class="effect-bar"><span id="combo-label">Find your flow ✧</span><div id="effect-pills"></div></div><div class="touch-controls" id="touch-controls"><p id="game-hint">Swipe anywhere on the ocean to steer</p><div class="dpad" id="dpad" role="group" aria-label="Steering controls"><button data-direction="up" aria-label="Turn up">↑</button><button data-direction="left" aria-label="Turn left">←</button><span></span><button data-direction="right" aria-label="Turn right">→</button><button data-direction="down" aria-label="Turn down">↓</button></div></div></div>
+      <aside class="play-sidebar right-sidebar"><div class="ocean-tip"><span data-icon="pearl"></span><h3>Follow the pearls</h3><p id="mode-instruction"></p></div><div class="power-guide"><h3>A little ocean magic</h3><p>◇ Shield · one safe escape</p><p>❄ Slow · gentler currents</p><p>U Magnet · nearby pearls</p><p>×2 Treasure · double points</p></div></aside></div>
+    </section>
+  </main>
+  <footer id="site-footer"><span><span class="tiny-dot"></span> A little play. A little magic. All yours.</span><span>No ads. No purchases. Just a happy little ocean.<span class="footer-shell" data-icon="shell"></span></span></footer>
+  <dialog id="modal"><div id="modal-content"></div></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <div id="storage-warning" class="storage-warning" role="status" hidden></div>
+  <noscript><p class="noscript">Mermaid Slither needs JavaScript to swim. Please enable it in your browser.</p></noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

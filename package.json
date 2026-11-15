@@ -1,0 +1,18 @@
+{
+  "name": "mermaid-slither",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "build": "node tools/build.mjs",
+    "test": "node --test tests/*.test.js",
+    "test:browser": "playwright test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1"
+  }
+}
