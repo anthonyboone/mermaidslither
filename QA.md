@@ -28,6 +28,15 @@ Covered flows:
 
 Screenshots and failure traces are generated under ignored `test-results/`. Browser emulation and synthetic touch events do not certify real iPhone touch behavior, audio, or GPU performance.
 
+### GitHub integration
+- Public source: https://github.com/anthonyboone/mermaidslither
+- HTTPS game: https://anthonyboone.github.io/mermaidslither/
+- Initial GitHub Actions run passed core/package checks, desktop Chromium, iPhone-sized WebKit, and Pages deployment.
+- Deployed-site smoke check passed at the actual repository subpath: HTTP 200, four mode cards, onboarding, Classic launch/pause, offline reload with saved profile, offline Time Twist launch, correct service-worker scope, and no page-level JavaScript errors (mobile-sized Chromium context).
+- Main requires pull requests, the three test checks, linear history and resolved conversations; force pushes and deletion are blocked, including for the maintainer.
+- Only tested main commits deploy. Actions are pinned to verified release commits; CI uses Node 24 and Ubuntu 24.04.
+- Production packaging allowlists runtime files and derives the service-worker cache revision automatically from their contents.
+
 ## Remaining physical-device / release checks
 - [ ] On a physical iPhone in Safari, complete several runs with actual swipes and both handed arrow layouts.
 - [ ] Confirm notch/home-indicator safe areas in portrait, landscape and standalone mode.
@@ -42,7 +51,7 @@ Screenshots and failure traces are generated under ignored `test-results/`. Brow
 - Progress belongs to the current browser/device. No sync, account, or export feature; clearing site data can erase it.
 - Browser storage restrictions may make progress temporary; the app warns instead of pretending saves succeeded.
 - An unknown/corrupt save is retained until an explicitly confirmed reset; temporary new progress cannot replace it silently.
-- Runtime files are cached as a set. Deploy every listed asset and increment `CACHE` in `sw.js` on changes. Existing app windows must close before a waiting update activates.
+- Runtime files are cached as a set. Use `npm run build` / GitHub Pages for automatic cache revisions; when deploying unbuilt sources, increment `CACHE` in `sw.js` on changes. Existing app windows must close before a waiting update activates.
 - The development server is not a production hosting/security solution. Production install/offline support needs HTTPS.
 - Canvas action gameplay is visual and is not claimed to be fully screen-reader playable. Menus, settings, HUD text, controls and dialogs use semantic HTML.
 - No AI opponent, daily mode, endless mode, ghost replay or online leaderboard in V1.
